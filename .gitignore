@@ -1,0 +1,22 @@
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 日志与临时
+*.log
+*.tmp
+
+# 禁止把抓取的个人数据/导出物提交进仓库
+data.json
+导出报告.txt
+手账本*.html
+images/
+videos/
+
+# Chrome 扩展加载时生成的元数据
+_metadata/

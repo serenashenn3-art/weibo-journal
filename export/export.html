@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>导出微博手账本</title>
+  <style>
+    :root { --ink:#3a3632; --muted:#9a917f; --accent:#d96f57; --paper:#faf6ef; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:40px 20px; background:var(--paper); color:var(--ink);
+      font:15px/1.8 "PingFang SC","Hiragino Sans GB",sans-serif; }
+    main { max-width:640px; margin:0 auto; background:#fff; border:1px solid #e8dfd0;
+      border-radius:10px; padding:28px 32px; box-shadow:2px 4px 14px rgba(90,70,40,.08); }
+    h1 { font-family:"Kaiti SC","STKaiti",KaiTi,serif; font-size:24px; margin:0 0 6px; letter-spacing:2px; }
+    .muted { color:var(--muted); font-size:13px; }
+    .stats { margin:14px 0; padding:10px 14px; background:#fff8ec; border:1px dashed #d8cfc0; border-radius:8px; font-size:14px; }
+    .stats b { color:var(--accent); }
+    .filters { margin:0 0 6px; padding:10px 14px; background:#fff; border:1px solid #eee5d5; border-radius:8px; font-size:13px; display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; }
+    .filters .f-title { font-weight:600; }
+    .filters .f-div { color:var(--muted); }
+    .filters label { display:flex; align-items:center; gap:5px; cursor:pointer; }
+    .filters input { accent-color:var(--accent); margin:0; }
+    button { display:block; width:100%; margin:10px 0; padding:11px 0; border:none; border-radius:8px;
+      background:var(--accent); color:#fff; font-size:15px; cursor:pointer; }
+    button.secondary { background:#fff; color:var(--ink); border:1px solid #d8cfc0; }
+    button:disabled { opacity:.45; cursor:default; }
+    #log { margin-top:16px; font-size:13px; color:var(--muted); max-height:220px; overflow-y:auto;
+      background:#fffdf8; border:1px solid #eee5d5; border-radius:8px; padding:10px 14px; }
+    #log .ok { color:#4a8c5c; }
+    #log .err { color:#b3402e; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>导出微博手账本</h1>
+    <div class="muted">把已抓取的微博生成为手账本文件夹：手账本.html + 图片/视频目录 + 原始数据备份</div>
+    <div class="stats" id="stats">正在读取本地数据…</div>
+    <div class="filters" id="filters">
+      <span class="f-title">手账内容（勾选后生成）：</span>
+      <label><input type="checkbox" id="fOriginal" checked> 原创</label>
+      <label><input type="checkbox" id="fRepost" checked> 转发</label>
+      <span class="f-div">·</span>
+      <label><input type="checkbox" id="fPics"> 仅含图片</label>
+      <label><input type="checkbox" id="fVideo"> 仅含视频</label>
+      <label><input type="checkbox" id="fText"> 仅纯文字</label>
+    </div>
+    <button id="btnPick">选择文件夹并导出</button>
+    <button id="btnAuto" class="secondary">自动导出到下载文件夹（免选择）</button>
+    <button id="btnReuse" class="secondary hidden">导出到上次的文件夹</button>
+    <button id="btnZip" class="secondary">导出为 ZIP 单文件（回退方案）</button>
+    <div id="log"></div>
+  </main>
+  <script type="module" src="export.js"></script>
+</body>
+</html>

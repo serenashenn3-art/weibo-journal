@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>微博手账本</h1>
+    <div id="loginStatus" class="muted">正在检测登录状态…</div>
+  </header>
+
+  <section class="uid-row">
+    <label for="uidInput">用户 UID</label>
+    <input id="uidInput" type="text" placeholder="例如 1234567890" spellcheck="false">
+  </section>
+
+  <section class="options">
+    <label><input type="checkbox" id="optLikes" checked> 点赞过的微博</label>
+    <label><input type="checkbox" id="optComments" checked> 评论过的微博</label>
+    <label><input type="checkbox" id="optVideo"> 下载视频文件（体积大）</label>
+  </section>
+
+  <section class="buttons">
+    <button id="btnStart" class="primary">开始导出</button>
+    <button id="btnPause" disabled>暂停</button>
+    <button id="btnResume" disabled>继续</button>
+  </section>
+  <section class="buttons">
+    <button id="btnExport">打开导出页</button>
+    <button id="btnReset" class="danger">清空数据重来</button>
+  </section>
+
+  <section id="progress" class="hidden">
+    <div class="phase"><span id="phaseLabel">—</span></div>
+    <div class="bar"><div id="barFill"></div></div>
+    <div class="stat">时间线微博：<b id="stTimeline">0</b> / <span id="stTotal">?</span></div>
+    <div class="stat">点赞与评论足迹：<b id="stFoot">0</b></div>
+    <div class="stat">图片：<b id="stImgOk">0</b> 成功 / <b id="stImgFail" class="warn">0</b> 失败</div>
+    <div class="stat">视频：<b id="stVidOk">0</b> 成功 / <b id="stVidFail" class="warn">0</b> 失败</div>
+    <div id="errBox" class="errors"></div>
+  </section>
+
+  <footer class="muted">关闭此窗口不影响抓取进度，可随时回来看。</footer>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
