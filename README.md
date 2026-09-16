@@ -14,7 +14,7 @@ A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into 
 
 - **Full-history scraping**: dual-source merge & dedup (by mid) — `weibo.com/ajax/statuses/mymblog` for recent posts + `m.weibo.cn` `since_id` cursor for deep history; completeness is verified against your profile's `statuses_count` ("1801 / 1797" style report in the journal header).
 - **Category system**: every post is tagged 原创 (original) / 转发 (repost) with a blue badge on reposts; images are physically separated into `images/original/` and `images/repost/` (archived by year/month).
-- **Complete content**: long posts are completed via the longtext API — including the original text of reposted Weibo; images are always downloaded at `large` original quality (3741/3741 successful in our 1797-post real run, 0 failures).
+- **Complete content**: long posts are completed via the longtext API — including the original text of reposted Weibo; images are always downloaded at `large` original quality (3741/3741 successful in our 1797-post real run, 0 failures); 头条文章 are fetched at original text when Weibo's visibility window allows (older articles degrade to title + link).
 - **Check-to-build**: pick 原创 / 转发 / 仅含图片 / 仅含视频 / 仅纯文字 before generating; the generated journal keeps interactive filters (category chips, year buttons, full-text search, month TOC) — filter first, then print.
 - **Timeline browsing**: vertical timeline with date rail, washi-tape month stickers, polaroid-style image grids, lazy loading, click-to-zoom lightbox.
 - **Print & PDF**: built-in 🖨 print button with print-optimized layout (print header, page-break-safe cards); the export page opens a print tab that auto-invokes the print dialog — choose "Save as PDF" for a vector-text, searchable PDF.
@@ -26,7 +26,7 @@ A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into 
 
 - **全量历史抓取**：双接口合并、按 mid 去重——近期走 `weibo.com/ajax/statuses/mymblog`，深挖历史走 `m.weibo.cn` since_id 游标；以资料页微博总数核对完整性（手账本顶部显示「1801 / 1797」式报告条）。
 - **分类体系**：每条微博标注原创 / 转发（转发卡片带蓝色角标）；图片物理分离到 `images/original/` 与 `images/repost/`（按年/月归档）。
-- **内容完整**：超长微博经长文接口补全全文（含转发原博全文）；图片一律 `large` 原图（实测 1797 条全量导出 3741/3741 张成功、0 失败）。
+- **内容完整**：超长微博经长文接口补全全文（含转发原博全文）；图片一律 `large` 原图（实测 1797 条全量导出 3741/3741 张成功、0 失败）；头条文章在微博可见期允许时抓取正文（超过半年可见期的文章保留标题+链接）。
 - **勾选后生成**：导出前勾选 原创 / 转发 / 仅含图片 / 仅含视频 / 仅纯文字；生成后的手账本仍保留交互筛选（分类胶囊、年份按钮、全文搜索、月份目录）——先筛选再打印，PDF 只含筛选结果。
 - **时间线翻阅**：纵向时间线 + 日期轨道、和纸胶带月份贴纸、拍立得图片墙、懒加载、点击放大。
 - **打印与 PDF**：内置 🖨 打印按钮，打印版式已适配（页眉、卡片防跨页截断）；导出页可打开打印页并自动呼出打印对话框，目标选「存储为 PDF」即得矢量文字版 PDF。
@@ -66,14 +66,14 @@ A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into 
 1. Log in to <https://weibo.com> in the same browser (QR scan works). Logging in dramatically raises the crawl quota — logged-out sessions are capped at ~1 page by Weibo.
 2. Click the extension icon ("微博手账本") in the toolbar.
 3. Your UID and total post count are detected automatically from the login session (or enter a UID manually).
-4. Tick the options you want — **liked footprint / commented footprint / download videos** — then click **开始导出 (Start Export)**.
+4. Tick the options you want — **图片原图（large 高清）/ 头条文章全文 / 视频文件 / 点赞足迹 / 评论足迹** — then click **开始导出 (Start Export)**. Text and long-post completion are always fully collected.
 5. The crawl runs in phases: recent posts → deep-history cursor → long-text completion → media download → footprints. You can close the popup; closing the browser resumes from the checkpoint next time.
 
 **中文：**
 1. 在同一浏览器登录 <https://weibo.com>（扫码即可）。登录后抓取额度大幅提升——游客身份微博只放行约 1 页数据。
 2. 点击工具栏上的扩展图标（「微博手账本」）。
 3. UID 与微博总数会从登录态自动识别（也可手动填写 UID）。
-4. 勾选需要的选项——**点赞足迹 / 评论足迹 / 下载视频**——然后点「**开始导出**」。
+4. 勾选需要的选项——**图片原图（large 高清）/ 头条文章全文 / 视频文件 / 点赞足迹 / 评论足迹**——然后点「**开始导出**」。文字与长文全文始终完整收录。
 5. 抓取分阶段进行：近期微博 → 游标深挖全历史 → 长文补全 → 媒体下载 → 足迹。关闭弹窗不影响进度；关浏览器后下次打开会从断点自动续抓。
 
 ---

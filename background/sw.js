@@ -61,6 +61,13 @@ async function startCrawl(uid, options) {
   }
   await setMeta('options', options);
   await initProfile(uid);
+  // 已完成状态下再点「开始」= 增量重扫：重建断点（数据保留，靠 mid 去重）
+  const cp = await getMeta('checkpoint');
+  if (cp && cp.phase === 'done') {
+    cp.phase = 'phaseA';
+    cp.a = {}; cp.b = {}; cp.lt = { idx: 0 }; cp.media = null; cp.likes = {}; cp.cmt = {};
+    await setMeta('checkpoint', cp);
+  }
   await setMeta('running', true);
   runningFlag = true;
   await ensureAlarm();
@@ -68,13 +75,13 @@ async function startCrawl(uid, options) {
 }
 
 async function getState() {
-  const [profile, checkpoint, stats, failedMedia, running, pageConfig] = await Promise.all([
+  const [profile, checkpoint, stats, failedMedia, running, pageConfig, options] = await Promise.all([
     getMeta('profile'), getMeta('checkpoint'), getMeta('stats'),
-    getMeta('failedMedia'), getMeta('running'), getMeta('pageConfig'),
+    getMeta('failedMedia'), getMeta('running'), getMeta('pageConfig'), getMeta('options'),
   ]);
   return {
     profile, checkpoint, stats, failedMedia: failedMedia || [],
-    running: !!running, pageConfig,
+    running: !!running, pageConfig, options,
   };
 }
 
@@ -93,7 +100,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         break;
       case 'start':
         try {
-          await startCrawl(msg.uid, msg.options || { video: true, likes: true, comments: true });
+          await startCrawl(msg.uid, msg.options || {
+            images: true, articles: true, video: false, likes: true, comments: true,
+          });
           sendResponse({ ok: true });
         } catch (e) {
           sendResponse({ ok: false, error: e.message });

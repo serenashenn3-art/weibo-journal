@@ -26,6 +26,14 @@ function render() {
   if (state.profile) {
     $('uidInput').placeholder = `当前：${state.profile.screen_name}（${state.profile.uid}）`;
   }
+  if (hasWork || done) $('progress').classList.remove('hidden');
+  if (!hasWork && !done) $('progress').classList.add('hidden');
+  if (state.stats && state.stats.errors && state.stats.errors.length) {
+    $('errBox').innerHTML = state.stats.errors
+      .slice(-3)
+      .map((e) => `<div>⚠ ${escapeHtml(e.msg)}</div>`)
+      .join('');
+  }
   if (!hasWork && !done) $('progress').classList.add('hidden');
   if (done) {
     $('phaseLabel').textContent = '抓取完成，可到导出页生成手账本';
@@ -52,6 +60,8 @@ function renderProgress(p) {
     $('stImgFail').textContent = p.stats.imagesFail;
     $('stVidOk').textContent = p.stats.videosOk;
     $('stVidFail').textContent = p.stats.videosFail;
+    $('stArtOk').textContent = p.stats.articlesOk || 0;
+    $('stArtFail').textContent = p.stats.articlesFail || 0;
   }
   if (typeof p.mediaTotal === 'number' && p.mediaTotal > 0) {
     const pct = Math.round(((p.mediaDone || 0) / p.mediaTotal) * 100);
@@ -84,6 +94,13 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 async function refreshState() {
   state = (await send({ type: 'get-state' })) || state;
+  if (state.options) {
+    $('optImages').checked = state.options.images !== false;
+    $('optArticles').checked = state.options.articles !== false;
+    $('optVideo').checked = !!state.options.video;
+    $('optLikes').checked = state.options.likes !== false;
+    $('optComments').checked = state.options.comments !== false;
+  }
   render();
 }
 
@@ -97,6 +114,8 @@ $('btnStart').addEventListener('click', async () => {
     type: 'start',
     uid,
     options: {
+      images: $('optImages').checked,
+      articles: $('optArticles').checked,
       video: $('optVideo').checked,
       likes: $('optLikes').checked,
       comments: $('optComments').checked,

@@ -5,39 +5,55 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <header>
-    <h1>微博手账本</h1>
-    <div id="loginStatus" class="muted">正在检测登录状态…</div>
+  <header class="app-header">
+    <div class="logo">📒</div>
+    <div>
+      <h1>微博手账本</h1>
+      <div id="loginStatus" class="muted">正在检测登录状态…</div>
+    </div>
   </header>
 
-  <section class="uid-row">
-    <label for="uidInput">用户 UID</label>
-    <input id="uidInput" type="text" placeholder="例如 1234567890" spellcheck="false">
+  <section class="card">
+    <div class="card-title">👤 账号</div>
+    <div class="uid-row">
+      <input id="uidInput" type="text" placeholder="用户 UID（登录 weibo.com 可自动获取）" spellcheck="false">
+    </div>
   </section>
 
-  <section class="options">
-    <label><input type="checkbox" id="optLikes" checked> 点赞过的微博</label>
-    <label><input type="checkbox" id="optComments" checked> 评论过的微博</label>
-    <label><input type="checkbox" id="optVideo"> 下载视频文件（体积大）</label>
+  <section class="card">
+    <div class="card-title">📦 自己微博的内容</div>
+    <label class="opt"><input type="checkbox" id="optImages" checked><span>图片原图 <em>large 高清</em></span></label>
+    <label class="opt"><input type="checkbox" id="optArticles" checked><span>头条文章 <em>抓全文</em></span></label>
+    <label class="opt"><input type="checkbox" id="optVideo"><span>视频文件 <em>体积大</em></span></label>
+    <div class="hint">文字与长文全文始终完整收录</div>
   </section>
 
-  <section class="buttons">
-    <button id="btnStart" class="primary">开始导出</button>
-    <button id="btnPause" disabled>暂停</button>
-    <button id="btnResume" disabled>继续</button>
-  </section>
-  <section class="buttons">
-    <button id="btnExport">打开导出页</button>
-    <button id="btnReset" class="danger">清空数据重来</button>
+  <section class="card">
+    <div class="card-title">👣 足迹 <span class="tag-note">尽力而为</span></div>
+    <label class="opt"><input type="checkbox" id="optLikes" checked><span>点赞过的微博</span></label>
+    <label class="opt"><input type="checkbox" id="optComments" checked><span>评论过的微博</span></label>
   </section>
 
-  <section id="progress" class="hidden">
+  <section class="actions">
+    <button id="btnStart" class="primary">▶ 开始导出</button>
+    <button id="btnPause" disabled>⏸ 暂停</button>
+    <button id="btnResume" disabled>⏵ 继续</button>
+  </section>
+  <section class="actions">
+    <button id="btnExport">🗂 打开导出页</button>
+    <button id="btnReset" class="danger">🗑 清空重来</button>
+  </section>
+
+  <section id="progress" class="card progress hidden">
     <div class="phase"><span id="phaseLabel">—</span></div>
     <div class="bar"><div id="barFill"></div></div>
-    <div class="stat">时间线微博：<b id="stTimeline">0</b> / <span id="stTotal">?</span></div>
-    <div class="stat">点赞与评论足迹：<b id="stFoot">0</b></div>
-    <div class="stat">图片：<b id="stImgOk">0</b> 成功 / <b id="stImgFail" class="warn">0</b> 失败</div>
-    <div class="stat">视频：<b id="stVidOk">0</b> 成功 / <b id="stVidFail" class="warn">0</b> 失败</div>
+    <div class="stats">
+      <div class="stat">时间线 <b id="stTimeline">0</b><i>/</i><span id="stTotal">?</span></div>
+      <div class="stat">足迹 <b id="stFoot">0</b></div>
+      <div class="stat">图片 <b id="stImgOk">0</b><i>失败</i><b id="stImgFail" class="warn">0</b></div>
+      <div class="stat">视频 <b id="stVidOk">0</b><i>失败</i><b id="stVidFail" class="warn">0</b></div>
+      <div class="stat" id="stArticlesRow">文章 <b id="stArtOk">0</b><i>失败</i><b id="stArtFail" class="warn">0</b></div>
+    </div>
     <div id="errBox" class="errors"></div>
   </section>
 

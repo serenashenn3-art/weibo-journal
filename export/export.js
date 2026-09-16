@@ -17,6 +17,12 @@ function log(msg, cls) {
 }
 
 async function loadData() {
+  // 显式设定筛选框默认值，避免浏览器表单恢复干扰
+  $('fOriginal').checked = true;
+  $('fRepost').checked = true;
+  $('fPics').checked = false;
+  $('fVideo').checked = false;
+  $('fText').checked = false;
   [profile, stats, failedMedia] = await Promise.all([
     getMeta('profile'), getMeta('stats'), getMeta('failedMedia'),
   ]);
