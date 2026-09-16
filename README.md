@@ -19,7 +19,8 @@ A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into 
 - **Timeline browsing**: vertical timeline with date rail, washi-tape month stickers, polaroid-style image grids, lazy loading, click-to-zoom lightbox.
 - **Print & PDF**: built-in 🖨 print button with print-optimized layout (print header, page-break-safe cards); the export page opens a print tab that auto-invokes the print dialog — choose "Save as PDF" for a vector-text, searchable PDF.
 - **Four export paths**: File System Access folder picker, one-click auto-export to `~/Downloads/微博手账本/` (no dialog), ZIP single-file fallback, print-to-PDF.
-- **Resilient crawling**: 1.2s/request rate limit, exponential backoff on 418/403/432, checkpoint resume across browser restarts, auto-switch to the mobile API when the desktop one rejects (logged-out), failed media queued for retry and listed in the report.
+- **Resilient crawling**: 1.2s/request rate limit, exponential backoff on 418/403/432, checkpoint resume across browser restarts, auto-switch to the mobile API when the desktop one rejects (logged-out), failed media retried on the next run and listed in the report.
+- **Self-healing export**: media missing from the local store (e.g. after an interrupted run in older versions) is re-downloaded live during export / print — historical gaps close in one pass, no placeholders left behind.
 - **Footprint (best-effort)**: liked/commented Weibo fetched when the API allows — clearly labeled as best-effort in the journal, never promised as complete.
 
 **中文：**
@@ -31,7 +32,8 @@ A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into 
 - **时间线翻阅**：纵向时间线 + 日期轨道、和纸胶带月份贴纸、拍立得图片墙、懒加载、点击放大。
 - **打印与 PDF**：内置 🖨 打印按钮，打印版式已适配（页眉、卡片防跨页截断）；导出页可打开打印页并自动呼出打印对话框，目标选「存储为 PDF」即得矢量文字版 PDF。
 - **四条导出路径**：File System Access 选择文件夹 / 一键自动导出到 `~/Downloads/微博手账本/`（免选择）/ ZIP 单文件回退 / 打印转 PDF。
-- **韧性抓取**：1.2 秒/请求限速，418/403/432 指数退避，关浏览器断点续抓，未登录访问被拒时自动切移动端接口，失败媒体入重试队列并记入报告。
+- **韧性抓取**：1.2 秒/请求限速，418/403/432 指数退避，关浏览器断点续抓，未登录访问被拒时自动切移动端接口，失败媒体下次抓取自动重试并记入报告。
+- **导出自愈**：导出/打印时发现本地缺失的媒体（如旧版本中断运行留下的缺口）会自动从微博实时下载回补——历史遗留的「图片未下载」占位一次导出即全部愈合。
 - **足迹（尽力而为）**：点赞/评论过的微博在接口允许时抓取——手账本中明确标注为尽力而为，不承诺全量。
 
 ---
@@ -149,6 +151,10 @@ Click **打开导出页 (Open Export Page)** in the popup after crawling:
 **Q: Some videos failed to download? / 为什么有视频下载失败？**
 - **EN:** Weibo's video URLs are signed and expire; deleted videos are unrecoverable. Failed items keep their poster + online link in the journal and are listed in the report. The extension refreshes the URL right before downloading to minimize this.
 - **中文：** 微博视频地址带签名会过期，被删除的视频无法找回。失败的视频在手账本中保留封面和在线链接，并记入报告。扩展会在下载前自动刷新视频地址以减少此类失败。
+
+**Q: Some images show "图片未下载" placeholders in the journal? / 手账本里有「图片未下载」占位？**
+- **EN:** Affects exports produced by older versions after an interrupted run (failed media used to be skipped permanently and invisibly). Current versions self-heal: just export again — missing media is re-downloaded on the fly. If a placeholder still survives, that item's original may be deleted on Weibo's side.
+- **中文：** 多见于旧版本中断运行后生成的导出（此前的失败媒体会被永久静默跳过）。现在版本已自愈：重新导出一次即可，缺失媒体会自动回补；若仍有零星占位，则是原图已在微博侧被删除。
 
 **Q: Where is data stored? Is it uploaded anywhere? / 数据存在哪里？会上传吗？**
 - **EN:** Everything lives in your browser's IndexedDB on this machine. The exported folder is written wherever you choose. Nothing passes through any third-party server.
