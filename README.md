@@ -4,8 +4,6 @@
 
 **[English](#features--功能)** | [中文](#features--功能)
 
-![License](https://img.shields.io/badge/License-MIT-green) ![MV3](https://img.shields.io/badge/Manifest-V3-blue) ![Platform](https://img.shields.io/badge/Platform-Chrome%20%2F%20Edge-orange) ![Deps](https://img.shields.io/badge/Dependencies-0-brightgreen) ![Lang](https://img.shields.io/badge/中文-文档-red)
-
 A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into a scrapbook-styled local archive: an offline timeline journal (HTML), original-quality images sorted into `original` / `repost` folders, long-text completion, original/repost/media category filtering, and print / PDF output. No build step, zero dependencies, all data stays on your machine.
 
 一个 Chrome 扩展（Manifest V3）：把**自己的全部微博**导出为手账本风格的本地档案——离线可开的纵向时间线手账本（HTML）、原图按**原创 / 转发**分目录归档、长文自动补全、原创/转发/媒体类型分类勾选筛选，并支持**打印与另存为 PDF**。无需构建、零依赖，数据全部留在本机。
