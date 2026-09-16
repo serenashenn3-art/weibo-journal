@@ -131,7 +131,7 @@ let lastBackfill = 0;
 async function readBlobOrFetch(item) {
   try {
     const rec = await readBlob(item.url);
-    if (rec && rec.ok) return rec.blob;
+    if (rec && rec.ok && rec.blob && rec.blob.size > 0) return rec.blob;
   } catch (e) { /* 本地缺失 */ }
   const gap = Date.now() - lastBackfill;
   if (gap < 400) await new Promise((r) => setTimeout(r, 400 - gap));
@@ -139,6 +139,7 @@ async function readBlobOrFetch(item) {
   const res = await fetch(item.url, { credentials: 'include' });
   if (!res.ok) throw new Error(`回补下载 HTTP ${res.status}`);
   const blob = await res.blob();
+  if (!blob || blob.size === 0) throw new Error('回补内容为空');
   if (item.kind !== 'video' && blob.type && !blob.type.startsWith('image/')) {
     throw new Error(`回补返回非图片内容 ${blob.type}`);
   }
@@ -185,12 +186,13 @@ async function gatherFiles(filters, onItem) {
       let blob = null;
       try {
         const rec = await readBlob(profile.avatar_hd);
-        if (rec && rec.ok) blob = rec.blob;
+        if (rec && rec.ok && rec.blob && rec.blob.size > 0) blob = rec.blob;
       } catch (e) { /* 本地没有 */ }
       if (!blob) {
         const res = await fetch(profile.avatar_hd, { credentials: 'include' });
         if (!res.ok) throw new Error(String(res.status));
         blob = await res.blob();
+        if (!blob || blob.size === 0) throw new Error('头像内容为空');
       }
       avatarRel = `images/avatar.${extOf(profile.avatar_hd)}`;
       if (!mediaMap.has(profile.avatar_hd)) mediaMap.set(profile.avatar_hd, avatarRel);

@@ -1,5 +1,5 @@
 // 打印页：从 IndexedDB 构建完整手账本，图片/视频用 blob 地址，随后可打印或另存为 PDF
-import { getMeta, allPosts, openDB } from '../lib/db.js';
+import { getMeta, allPosts, openDB, putMedia } from '../lib/db.js';
 import { buildJournal } from '../lib/journal.js';
 
 const $ = (id) => document.getElementById(id);
@@ -62,7 +62,7 @@ async function main() {
     let blob = null;
     try {
       const rec = await readBlob(url);
-      if (rec && rec.ok) blob = rec.blob;
+      if (rec && rec.ok && rec.blob && rec.blob.size > 0) blob = rec.blob;
     } catch (e) { /* 本地缺失，尝试回补 */ }
     if (!blob) {
       try {
@@ -70,7 +70,11 @@ async function main() {
         if (gap < 400) await new Promise((r) => setTimeout(r, 400 - gap));
         lastFetch = Date.now();
         const res = await fetch(url, { credentials: 'include' });
-        if (res.ok) blob = await res.blob();
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        blob = await res.blob();
+        if (!blob || blob.size === 0) throw new Error('内容为空');
+        // 回补成功，回写本地库（顺带修复损坏的空记录）
+        try { await putMedia({ url, blob, kind: typeof item === 'object' ? 'video' : 'img', mid: typeof item === 'object' ? item.mid : '', ok: true, ts: Date.now() }); } catch (e) { /* 回写失败不影响打印 */ }
       } catch (e) { /* 放弃，显示占位 */ }
     }
     if (blob) {
@@ -86,7 +90,7 @@ async function main() {
   if (profile && profile.avatar_hd) {
     try {
       const rec = await readBlob(profile.avatar_hd);
-      if (rec && rec.ok) avatarRel = URL.createObjectURL(rec.blob);
+      if (rec && rec.ok && rec.blob && rec.blob.size > 0) avatarRel = URL.createObjectURL(rec.blob);
     } catch (e) { /* 忽略 */ }
   }
 
