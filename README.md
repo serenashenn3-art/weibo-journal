@@ -2,7 +2,7 @@
 
 ![Project Screenshot](docs/hero.png)
 
-**[English](#features)** | 中文
+**[English](#features--功能)** | [中文](#features--功能)
 
 ![License](https://img.shields.io/badge/License-MIT-green) ![MV3](https://img.shields.io/badge/Manifest-V3-blue) ![Platform](https://img.shields.io/badge/Platform-Chrome%20%2F%20Edge-orange) ![Deps](https://img.shields.io/badge/Dependencies-0-brightgreen) ![Lang](https://img.shields.io/badge/中文-文档-red)
 
