@@ -126,6 +126,29 @@ async function readBlob(url) {
   });
 }
 
+// 读本地媒体；缺失时从微博实时回补（带限速，成功后回写本地库）
+let lastBackfill = 0;
+async function readBlobOrFetch(item) {
+  try {
+    const rec = await readBlob(item.url);
+    if (rec && rec.ok) return rec.blob;
+  } catch (e) { /* 本地缺失 */ }
+  const gap = Date.now() - lastBackfill;
+  if (gap < 400) await new Promise((r) => setTimeout(r, 400 - gap));
+  lastBackfill = Date.now();
+  const res = await fetch(item.url, { credentials: 'include' });
+  if (!res.ok) throw new Error(`回补下载 HTTP ${res.status}`);
+  const blob = await res.blob();
+  if (item.kind !== 'video' && blob.type && !blob.type.startsWith('image/')) {
+    throw new Error(`回补返回非图片内容 ${blob.type}`);
+  }
+  try {
+    const { putMedia } = await import('../lib/db.js');
+    await putMedia({ url: item.url, blob, kind: item.kind, mid: item.mid, ok: true, ts: Date.now() });
+  } catch (e) { /* 回写失败不影响导出 */ }
+  return blob;
+}
+
 // ---------- 主流程 ----------
 
 async function gatherFiles(filters, onItem) {
@@ -140,15 +163,14 @@ async function gatherFiles(filters, onItem) {
   for (const item of plan) {
     const rel = relFor(item);
     try {
-      const rec = await readBlob(item.url);
-      if (rec && rec.ok) {
-        if (item.kind === 'video') {
-          videoMap.set(item.mid, rel);
-        } else if (!mediaMap.has(item.url)) {
-          mediaMap.set(item.url, rel);
-        }
-        files.push({ path: rel, data: rec.blob });
+      const blob = await readBlobOrFetch(item);
+      if (item.kind === 'video') {
+        videoMap.set(item.mid, rel);
+      } else if (!mediaMap.has(item.url)) {
+        mediaMap.set(item.url, rel);
       }
+      files.push({ path: rel, data: blob });
+      if (blob._backfilled) log(`回补成功：${rel}`);
     } catch (e) {
       log(`读取媒体失败 ${item.url}: ${e.message}`, 'err');
     }

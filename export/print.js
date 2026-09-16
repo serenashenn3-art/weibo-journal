@@ -3,6 +3,7 @@ import { getMeta, allPosts, openDB } from '../lib/db.js';
 import { buildJournal } from '../lib/journal.js';
 
 const $ = (id) => document.getElementById(id);
+let lastFetch = 0;
 const filters = (() => { try { return JSON.parse(localStorage.getItem('wj-print-filters') || '{}'); } catch (e) { return {}; } })();
 
 function loadmsg(t, pct) {
@@ -58,14 +59,25 @@ async function main() {
   let done = 0;
   for (const item of need) {
     const url = typeof item === 'string' ? item : item.v;
+    let blob = null;
     try {
       const rec = await readBlob(url);
-      if (rec && rec.ok) {
-        const objUrl = URL.createObjectURL(rec.blob);
-        if (typeof item === 'object') videoMap.set(item.mid, objUrl);
-        else if (!mediaMap.has(url)) mediaMap.set(url, objUrl);
-      }
-    } catch (e) { /* 缺媒体则显示占位 */ }
+      if (rec && rec.ok) blob = rec.blob;
+    } catch (e) { /* 本地缺失，尝试回补 */ }
+    if (!blob) {
+      try {
+        const gap = Date.now() - lastFetch;
+        if (gap < 400) await new Promise((r) => setTimeout(r, 400 - gap));
+        lastFetch = Date.now();
+        const res = await fetch(url, { credentials: 'include' });
+        if (res.ok) blob = await res.blob();
+      } catch (e) { /* 放弃，显示占位 */ }
+    }
+    if (blob) {
+      const objUrl = URL.createObjectURL(blob);
+      if (typeof item === 'object') videoMap.set(item.mid, objUrl);
+      else if (!mediaMap.has(url)) mediaMap.set(url, objUrl);
+    }
     done++;
     if (done % 50 === 0) loadmsg(`装载媒体 ${done}/${need.length}…`, 10 + Math.round((done / need.length) * 80));
   }
