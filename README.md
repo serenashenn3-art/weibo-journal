@@ -1,7 +1,5 @@
 # Weibo Journal / 微博手账本
 
-![Project Screenshot](docs/hero.png)
-
 **[English](#features--功能)** | [中文](#features--功能)
 
 A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into a scrapbook-styled local archive: an offline timeline journal (HTML), original-quality images sorted into `original` / `repost` folders, long-text completion, original/repost/media category filtering, and print / PDF output. No build step, zero dependencies, all data stays on your machine.
