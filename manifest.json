@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "微博手账本",
   "version": "1.0.0",
-  "description": "把自己的全部微博导出为手账本风格的时间线档案：HTML 手账本 + 原图文件夹 + 原始数据备份",
+  "description": "把全部微博导出为手账本风格的时间线档案（原创/转发分类 + 原图分目录 + 打印/PDF）/ Export all your Weibo posts into a scrapbook-style timeline archive with category filters and print/PDF output",
   "permissions": ["storage", "cookies", "downloads", "alarms", "declarativeNetRequest"],
   "declarative_net_request": {
     "rule_resources": [

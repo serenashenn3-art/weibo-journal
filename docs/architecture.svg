@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#9a917f"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="960" height="420" fill="#faf6ef"/>
+
+  <text x="480" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#3a3632">weibo-journal 数据流 / Data Flow</text>
+
+  <!-- 数据源 -->
+  <rect x="30" y="60" width="180" height="92" rx="10" fill="#fff" stroke="#d8cfc0"/>
+  <text x="120" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#3a3632">微博接口</text>
+  <text x="120" y="106" text-anchor="middle" font-size="11" fill="#6b6355">weibo.com/ajax</text>
+  <text x="120" y="122" text-anchor="middle" font-size="11" fill="#6b6355">(近期 · XSRF+Referer)</text>
+  <text x="120" y="140" text-anchor="middle" font-size="11" fill="#6b6355">m.weibo.cn 游标</text>
+
+  <!-- 抓取 -->
+  <rect x="250" y="60" width="200" height="92" rx="10" fill="#fff" stroke="#d8cfc0"/>
+  <text x="350" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#3a3632">Service Worker</text>
+  <text x="350" y="106" text-anchor="middle" font-size="11" fill="#6b6355">抓取状态机 · 双源合并</text>
+  <text x="350" y="122" text-anchor="middle" font-size="11" fill="#6b6355">限速 1.2s · 418/432 退避</text>
+  <text x="350" y="140" text-anchor="middle" font-size="11" fill="#6b6355">断点续抓 · mid 去重</text>
+
+  <!-- 存储 -->
+  <rect x="490" y="60" width="180" height="92" rx="10" fill="#fff" stroke="#d8cfc0"/>
+  <text x="580" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#3a3632">IndexedDB（本地）</text>
+  <text x="580" y="106" text-anchor="middle" font-size="11" fill="#6b6355">posts 按 mid 存储</text>
+  <text x="580" y="122" text-anchor="middle" font-size="11" fill="#6b6355">media 原图/视频 blob</text>
+  <text x="580" y="140" text-anchor="middle" font-size="11" fill="#6b6355">meta 断点/统计/选项</text>
+
+  <!-- 导出 -->
+  <rect x="710" y="60" width="220" height="92" rx="10" fill="#fff" stroke="#d8cfc0"/>
+  <text x="820" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#3a3632">导出 Export</text>
+  <text x="820" y="106" text-anchor="middle" font-size="11" fill="#6b6355">HTML 文件夹（FS Access）</text>
+  <text x="820" y="122" text-anchor="middle" font-size="11" fill="#6b6355">自动下载目录 · ZIP 回退</text>
+  <text x="820" y="140" text-anchor="middle" font-size="11" fill="#6b6355">打印页 → 另存为 PDF</text>
+
+  <line x1="210" y1="106" x2="248" y2="106" stroke="#9a917f" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="450" y1="106" x2="488" y2="106" stroke="#9a917f" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="670" y1="106" x2="708" y2="106" stroke="#9a917f" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 阶段流水线 -->
+  <text x="480" y="200" text-anchor="middle" font-size="13" font-weight="bold" fill="#3a3632">抓取阶段流水线 / Crawl Phases</text>
+  <g font-size="11" fill="#3a3632">
+    <rect x="40"  y="216" width="128" height="34" rx="17" fill="#fdeee6" stroke="#d96f57"/>
+    <text x="104" y="238" text-anchor="middle">A 近期 weibo.com</text>
+    <rect x="180" y="216" width="128" height="34" rx="17" fill="#fdeee6" stroke="#d96f57"/>
+    <text x="244" y="238" text-anchor="middle">B 游标挖全历史</text>
+    <rect x="320" y="216" width="104" height="34" rx="17" fill="#fdeee6" stroke="#d96f57"/>
+    <text x="372" y="238" text-anchor="middle">长文补全</text>
+    <rect x="436" y="216" width="124" height="34" rx="17" fill="#fdeee6" stroke="#d96f57"/>
+    <text x="498" y="238" text-anchor="middle">媒体下载 large</text>
+    <rect x="572" y="216" width="104" height="34" rx="17" fill="#e8f0f7" stroke="#7ba2c9"/>
+    <text x="624" y="238" text-anchor="middle">点赞足迹*</text>
+    <rect x="688" y="216" width="104" height="34" rx="17" fill="#e8f0f7" stroke="#7ba2c9"/>
+    <text x="750" y="238" text-anchor="middle">评论足迹*</text>
+    <rect x="804" y="216" width="76"  height="34" rx="17" fill="#e9f3ea" stroke="#4a8c5c"/>
+    <text x="842" y="238" text-anchor="middle">完成</text>
+  </g>
+  <text x="480" y="272" text-anchor="middle" font-size="10" fill="#9a917f">* 尽力而为：受微博接口限制，只含平台保留的最近记录 / best-effort, limited by Weibo API</text>
+
+  <!-- 产物 -->
+  <text x="480" y="308" text-anchor="middle" font-size="13" font-weight="bold" fill="#3a3632">产物 / Output</text>
+  <g font-size="11" fill="#6b6355">
+    <rect x="60"  y="322" width="250" height="60" rx="8" fill="#fff" stroke="#d8cfc0"/>
+    <text x="185" y="346" text-anchor="middle" font-weight="bold" fill="#3a3632">手账本.html（离线）</text>
+    <text x="185" y="366" text-anchor="middle">时间线 · 目录 · 搜索 · 分类筛选 · 打印</text>
+    <rect x="330" y="322" width="250" height="60" rx="8" fill="#fff" stroke="#d8cfc0"/>
+    <text x="455" y="346" text-anchor="middle" font-weight="bold" fill="#3a3632">images/original · repost</text>
+    <text x="455" y="366" text-anchor="middle">原创图与转发图分目录（年/月归档）</text>
+    <rect x="600" y="322" width="300" height="60" rx="8" fill="#fff" stroke="#d8cfc0"/>
+    <text x="750" y="346" text-anchor="middle" font-weight="bold" fill="#3a3632">data.json · videos · 导出报告.txt</text>
+    <text x="750" y="366" text-anchor="middle">原始数据备份 · 视频 · 完整性核对清单</text>
+  </g>
+</svg>
