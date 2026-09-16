@@ -260,6 +260,16 @@ $('btnReuse').addEventListener('click', async () => {
   }
 });
 
+// 打印 / PDF：把当前勾选的分类传给打印页，新标签页生成完整手账本并呼出打印
+$('btnPrint').addEventListener('click', () => {
+  try {
+    localStorage.setItem('wj-print-filters', JSON.stringify(readFilters()));
+    chrome.tabs.create({ url: chrome.runtime.getURL('export/print.html') });
+  } catch (e) {
+    log(`打开打印页失败：${e.message}`, 'err');
+  }
+});
+
 // 免选择的文件夹导出：经 chrome.downloads 直接写入下载目录的「微博手账本/」子目录
 $('btnAuto').addEventListener('click', async () => {
   try {
