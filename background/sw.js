@@ -1,6 +1,6 @@
 import { runCrawl, initProfile } from '../lib/crawl.js';
 import { detectLogin } from '../lib/api.js';
-import { getMeta, setMeta, resetAll } from '../lib/db.js';
+import { getMeta, setMeta, resetAll, openDB } from '../lib/db.js';
 
 let activeLoop = false;
 let runningFlag = false;
@@ -79,9 +79,30 @@ async function getState() {
     getMeta('profile'), getMeta('checkpoint'), getMeta('stats'),
     getMeta('failedMedia'), getMeta('running'), getMeta('pageConfig'), getMeta('options'),
   ]);
+  let mediaStats = null;
+  try {
+    const db = await openDB();
+    mediaStats = await new Promise((resolve) => {
+      const t = db.transaction('media', 'readonly');
+      const store = t.objectStore('media');
+      const out = { total: 0, images: 0, videos: 0, articles: 0 };
+      const cursor = store.openCursor();
+      cursor.onsuccess = () => {
+        const c = cursor.result;
+        if (!c) { resolve(out); return; }
+        out.total++;
+        const k = c.value && c.value.kind;
+        if (k === 'video') out.videos++;
+        else if (k === 'article') out.articles++;
+        else out.images++;
+        c.continue();
+      };
+      cursor.onerror = () => resolve(null);
+    });
+  } catch (e) { mediaStats = null; }
   return {
     profile, checkpoint, stats, failedMedia: failedMedia || [],
-    running: !!running, pageConfig, options,
+    running: !!running, pageConfig, options, mediaStats,
   };
 }
 

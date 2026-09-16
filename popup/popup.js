@@ -26,6 +26,15 @@ function render() {
   if (state.profile) {
     $('uidInput').placeholder = `当前：${state.profile.screen_name}（${state.profile.uid}）`;
   }
+  if (state.stats) {
+    const ms = state.mediaStats;
+    $('stImgOk').textContent = ms ? ms.images : state.stats.imagesOk;
+    $('stVidOk').textContent = ms ? ms.videos : state.stats.videosOk;
+    $('stImgFail').textContent = state.stats.imagesFail;
+    $('stVidFail').textContent = state.stats.videosFail;
+    $('stArtOk').textContent = state.stats.articlesOk || 0;
+    $('stArtFail').textContent = state.stats.articlesFail || 0;
+  }
   if (hasWork || done) $('progress').classList.remove('hidden');
   if (!hasWork && !done) $('progress').classList.add('hidden');
   if (state.stats && state.stats.errors && state.stats.errors.length) {
@@ -56,9 +65,11 @@ function renderProgress(p) {
   $('stTotal').textContent = p.statusesCount || '?';
   $('stFoot').textContent = p.footprint ?? '0';
   if (p.stats) {
-    $('stImgOk').textContent = p.stats.imagesOk;
+    // 计数以媒体库实际数量为准（统计 meta 可能因中断运行而丢失）
+    const ms = p.mediaStats;
+    $('stImgOk').textContent = ms ? ms.images : p.stats.imagesOk;
+    $('stVidOk').textContent = ms ? ms.videos : p.stats.videosOk;
     $('stImgFail').textContent = p.stats.imagesFail;
-    $('stVidOk').textContent = p.stats.videosOk;
     $('stVidFail').textContent = p.stats.videosFail;
     $('stArtOk').textContent = p.stats.articlesOk || 0;
     $('stArtFail').textContent = p.stats.articlesFail || 0;
