@@ -20,7 +20,7 @@ A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into 
 - **Print & PDF**: built-in 🖨 print button with print-optimized layout (print header, page-break-safe cards); the export page opens a print tab that auto-invokes the print dialog — choose "Save as PDF" for a vector-text, searchable PDF.
 - **Four export paths**: File System Access folder picker, one-click auto-export to `~/Downloads/微博手账本/` (no dialog), ZIP single-file fallback, print-to-PDF.
 - **Resilient crawling**: 1.2s/request rate limit, exponential backoff on 418/403/432, checkpoint resume across browser restarts, auto-switch to the mobile API when the desktop one rejects (logged-out), failed media retried on the next run and listed in the report.
-- **Self-healing export**: media missing from the local store (e.g. after an interrupted run in older versions) is re-downloaded live during export / print — historical gaps close in one pass, no placeholders left behind.
+- **Self-healing export**: media missing from the local store (e.g. after an interrupted run in older versions) is re-downloaded live during export / print — historical gaps close in one pass, no placeholders left behind. Blob size is validated on both write and read; corrupted empty records are detected and re-downloaded automatically, so broken images never reach the journal.
 - **Footprint (best-effort)**: liked/commented Weibo fetched when the API allows — clearly labeled as best-effort in the journal, never promised as complete.
 
 **中文：**
@@ -33,7 +33,7 @@ A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into 
 - **打印与 PDF**：内置 🖨 打印按钮，打印版式已适配（页眉、卡片防跨页截断）；导出页可打开打印页并自动呼出打印对话框，目标选「存储为 PDF」即得矢量文字版 PDF。
 - **四条导出路径**：File System Access 选择文件夹 / 一键自动导出到 `~/Downloads/微博手账本/`（免选择）/ ZIP 单文件回退 / 打印转 PDF。
 - **韧性抓取**：1.2 秒/请求限速，418/403/432 指数退避，关浏览器断点续抓，未登录访问被拒时自动切移动端接口，失败媒体下次抓取自动重试并记入报告。
-- **导出自愈**：导出/打印时发现本地缺失的媒体（如旧版本中断运行留下的缺口）会自动从微博实时下载回补——历史遗留的「图片未下载」占位一次导出即全部愈合。
+- **导出自愈**：导出/打印时发现本地缺失的媒体（如旧版本中断运行留下的缺口）会自动从微博实时下载回补——历史遗留的「图片未下载」占位一次导出即全部愈合。写入与读取双侧校验文件大小，损坏的空文件记录会被自动识别并重新下载修复，不会以破图形式进入手账本。
 - **足迹（尽力而为）**：点赞/评论过的微博在接口允许时抓取——手账本中明确标注为尽力而为，不承诺全量。
 
 ---
