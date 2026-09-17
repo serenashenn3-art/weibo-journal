@@ -131,7 +131,7 @@ let lastBackfill = 0;
 async function readBlobOrFetch(item) {
   try {
     const rec = await readBlob(item.url);
-    if (rec && rec.ok && rec.blob && rec.blob.size > 0) return rec.blob;
+    if (rec && rec.ok && rec.blob && rec.blob.size > 0) return { blob: rec.blob, backfilled: false };
   } catch (e) { /* 本地缺失 */ }
   const gap = Date.now() - lastBackfill;
   if (gap < 400) await new Promise((r) => setTimeout(r, 400 - gap));
@@ -147,32 +147,37 @@ async function readBlobOrFetch(item) {
     const { putMedia } = await import('../lib/db.js');
     await putMedia({ url: item.url, blob, kind: item.kind, mid: item.mid, ok: true, ts: Date.now() });
   } catch (e) { /* 回写失败不影响导出 */ }
-  return blob;
+  return { blob, backfilled: true };
 }
 
 // ---------- 主流程 ----------
 
 async function gatherFiles(filters, onItem) {
-  // 返回 { files, mediaMap, videoMap, avatarRel, postsIncluded }
+  // 返回 { files, mediaMap, videoMap, avatarRel, postsIncluded, gatherStats }
   const mediaMap = new Map();
   const videoMap = new Map();
   const files = [];
+  const gatherStats = { expected: 0, ok: 0, backfilled: 0, fail: 0 };
   const plan = buildPlan(filters);
+  gatherStats.expected = plan.length;
   const postsIncluded = posts.filter((p) => p.source !== 'timeline' || !filters || matchFilters(p, filters));
   let done = 0;
 
   for (const item of plan) {
     const rel = relFor(item);
     try {
-      const blob = await readBlobOrFetch(item);
+      const r = await readBlobOrFetch(item);
+      const blob = r.blob;
+      if (r.backfilled) gatherStats.backfilled++;
+      gatherStats.ok++;
       if (item.kind === 'video') {
         videoMap.set(item.mid, rel);
       } else if (!mediaMap.has(item.url)) {
         mediaMap.set(item.url, rel);
       }
       files.push({ path: rel, data: blob });
-      if (blob._backfilled) log(`回补成功：${rel}`);
     } catch (e) {
+      gatherStats.fail++;
       log(`读取媒体失败 ${item.url}: ${e.message}`, 'err');
     }
     done++;
@@ -200,10 +205,10 @@ async function gatherFiles(filters, onItem) {
     } catch (e) { log(`头像下载失败（不影响正文）：${e.message}`); }
   }
 
-  return { files, mediaMap, videoMap, avatarRel, postsIncluded };
+  return { files, mediaMap, videoMap, avatarRel, postsIncluded, gatherStats };
 }
 
-function buildStaticFiles(mediaMap, videoMap, avatarRel, filters) {
+function buildStaticFiles(mediaMap, videoMap, avatarRel, filters, gatherStats) {
   const postsIncluded = posts.filter((p) => p.source !== 'timeline' || !filters || matchFilters(p, filters));
   const journal = buildJournal({
     profile: { ...profile, avatar_rel: avatarRel },
@@ -222,10 +227,12 @@ function buildStaticFiles(mediaMap, videoMap, avatarRel, filters) {
     `时间线微博合计：${timelineCount} 条` + (profile && profile.statuses_count ? ` / 账号共 ${profile.statuses_count} 条` : ''),
     `足迹（点赞/评论）：${postsIncluded.length - timelineCount} 条`,
     `媒体文件：${mediaMap.size} 张图片（原创图在 images/original，转发图在 images/repost），${videoMap.size} 个视频`,
+    gatherStats ? `完整性核对：本次范围应有媒体 ${gatherStats.expected} 个，成功 ${gatherStats.ok} 个（其中本地缺失/损坏、导出时自动回补 ${gatherStats.backfilled} 个），失败 ${gatherStats.fail} 个` : '',
+    stats && stats.verifyExpected ? `抓取对账：全部应有 ${stats.verifyExpected} 个，抓取结束时实存 ${stats.verifyStored} 个、当场补齐 ${stats.verifyHealed} 个、仍缺 ${stats.verifyMissing} 个` : '',
     `媒体失败：${(failedMedia || []).length} 个（明细见 data.json 的 failedMedia 字段）`,
     '',
     '说明：点赞/评论足迹受微博接口限制，仅包含平台保留的最近记录。',
-  ].join('\n');
+  ].filter(Boolean).join('\n');
   return [
     { path: '手账本.html', text: journal },
     { path: 'data.json', text: dataJson },
@@ -244,12 +251,12 @@ async function doExport(root) {
   }
   log('开始整理媒体文件…');
   const t0 = Date.now();
-  const { files, mediaMap, videoMap, avatarRel } = await gatherFiles(filters, (d, t) => {
+  const { files, mediaMap, videoMap, avatarRel, gatherStats } = await gatherFiles(filters, (d, t) => {
     if (d % 100 === 0) log(`媒体整理 ${d}/${t}…`);
   });
   log(`媒体就绪：图片 ${mediaMap.size} 张，视频 ${videoMap.size} 个（${((Date.now() - t0) / 1000).toFixed(1)}s）`, 'ok');
 
-  const statics = buildStaticFiles(mediaMap, videoMap, avatarRel, filters);
+  const statics = buildStaticFiles(mediaMap, videoMap, avatarRel, filters, gatherStats);
   const total = files.length + statics.length;
   let written = 0;
   for (const f of files) {
@@ -306,10 +313,10 @@ $('btnAuto').addEventListener('click', async () => {
     $('btnPick').disabled = $('btnReuse').disabled = $('btnZip').disabled = $('btnAuto').disabled = true;
     const filters = readFilters();
     log('开始整理媒体文件…');
-    const { files, mediaMap, videoMap, avatarRel } = await gatherFiles(filters, (d, t) => {
+    const { files, mediaMap, videoMap, avatarRel, gatherStats } = await gatherFiles(filters, (d, t) => {
       if (d % 200 === 0) log(`媒体整理 ${d}/${t}…`);
     });
-    const statics = buildStaticFiles(mediaMap, videoMap, avatarRel, filters);
+    const statics = buildStaticFiles(mediaMap, videoMap, avatarRel, filters, gatherStats);
     const enc2 = new TextEncoder();
     const typeOf = (p) => (p.endsWith('.html') ? 'text/html;charset=utf-8'
       : p.endsWith('.json') ? 'application/json' : 'text/plain;charset=utf-8');
@@ -356,8 +363,8 @@ $('btnZip').addEventListener('click', async () => {
     $('btnPick').disabled = $('btnReuse').disabled = $('btnZip').disabled = true;
     log('ZIP 打包会把所有文件载入内存，媒体很多时可能较慢…');
     const filters = readFilters();
-    const { files, mediaMap, videoMap, avatarRel } = await gatherFiles(filters, null);
-    const statics = buildStaticFiles(mediaMap, videoMap, avatarRel, filters);
+    const { files, mediaMap, videoMap, avatarRel, gatherStats } = await gatherFiles(filters, null);
+    const statics = buildStaticFiles(mediaMap, videoMap, avatarRel, filters, gatherStats);
     const entries = [];
     for (const f of files) entries.push({ name: f.path, data: new Uint8Array(await f.data.arrayBuffer()) });
     for (const s of statics) entries.push({ name: s.path, data: enc.encode(s.text) });
