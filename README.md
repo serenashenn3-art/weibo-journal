@@ -118,8 +118,8 @@ Click **打开导出页 (Open Export Page)** in the popup after crawling:
 1. **Pick categories**: 原创 / 转发 / 仅含图片 / 仅含视频 / 仅纯文字 — the journal is generated from your selection.
 2. **Choose an output path**:
    - **选择文件夹并导出** — File System Access picker; writes `手账本.html + images/ + videos/ + data.json + 导出报告.txt` to any folder you pick.
-   - **自动导出到下载文件夹** — no dialog; everything lands in `~/Downloads/微博手账本/`.
-   - **导出为 ZIP** — single-file fallback for browsers without File System Access.
+   - **自动导出 ZIP 压缩包** — no dialog; one `微博手账本-日期.zip` lands in your downloads folder (streamed build, constant memory). Unzip and open `手账本.html`.
+   - **导出为 ZIP（回退方案）** — in-memory single-file fallback for browsers without File System Access / OPFS.
 3. **Print / PDF**: click **打开打印页** — a new tab assembles the full journal (media loaded on the fly) and invokes the print dialog. Choose **Save as PDF** for a vector-text PDF; or use the 🖨 button inside any journal to print the current filtered view.
 4. Open `手账本.html` — fully offline: timeline, month TOC, search, year & category filters, lightbox.
 
@@ -129,8 +129,8 @@ Click **打开导出页 (Open Export Page)** in the popup after crawling:
 1. **勾选分类**：原创 / 转发 / 仅含图片 / 仅含视频 / 仅纯文字——手账本按勾选生成。
 2. **选择输出路径**：
    - **选择文件夹并导出**——File System Access 选择器；把 `手账本.html + images/ + videos/ + data.json + 导出报告.txt` 写入你选的文件夹。
-   - **自动导出到下载文件夹**——免选择，全部写入 `~/Downloads/微博手账本/`。
-   - **导出为 ZIP**——单文件回退，适合不支持 File System Access 的浏览器。
+   - **自动导出 ZIP 压缩包**——免选择，下载文件夹里只出现一个 `微博手账本-日期.zip`（流式打包不占内存），解压后打开 `手账本.html`。
+   - **导出为 ZIP（回退方案）**——内存打包单文件，适合不支持 File System Access / OPFS 的浏览器。
 3. **打印 / PDF**：点「**打开打印页**」——新标签页即时装载全部媒体生成手账本并呼出打印对话框，目标选「**存储为 PDF**」即得矢量文字版 PDF；手账本内的 🖨 按钮则可打印当前筛选视图。
 4. 双击打开 `手账本.html`——完全离线：时间线、月份目录、搜索、年份与分类筛选、图片放大。
 
@@ -178,7 +178,7 @@ weibo-journal/
 │   └── content.js           # weibo.com 页面：读取 $CONFIG.uid（登录检测 / UID 自动填入）
 ├── popup/                   # 控制面板：登录检测、选项、开始/暂停/继续、实时进度、错误栏
 ├── export/
-│   ├── export.html/js       # 导出页：分类勾选、四种导出路径（文件夹/自动下载/ZIP/打印页）
+│   ├── export.html/js       # 导出页：分类勾选、四种导出路径（文件夹/自动ZIP/内存ZIP回退/打印页）
 │   └── print.html/js        # 打印页：blob 地址装载媒体生成手账本，自动呼出打印对话框
 └── lib/
     ├── api.js               # 微博接口封装：限速、退避、XSRF/Referer 头、登录检测
