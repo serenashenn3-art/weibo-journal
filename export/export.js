@@ -2,6 +2,7 @@ import { openDB, getMeta, setMeta, allPosts } from '../lib/db.js';
 import { imageRelPath, videoRelPath, extOf } from '../lib/imager.js';
 import { buildJournal } from '../lib/journal.js';
 import { createZip } from '../lib/zip.js';
+import { createZipStreaming } from '../lib/zipstream.js';
 
 const $ = (id) => document.getElementById(id);
 const enc = new TextEncoder();
@@ -18,15 +19,19 @@ function log(msg, cls) {
 
 async function loadData() {
   // 显式设定筛选框默认值，避免浏览器表单恢复干扰
-  $('fOriginal').checked = true;
-  $('fRepost').checked = true;
-  $('fPics').checked = false;
-  $('fVideo').checked = false;
-  $('fText').checked = false;
+  const resetFilters = () => {
+    $('fOriginal').checked = true;
+    $('fRepost').checked = true;
+    $('fPics').checked = false;
+    $('fVideo').checked = false;
+    $('fText').checked = false;
+  };
+  resetFilters();
   [profile, stats, failedMedia] = await Promise.all([
     getMeta('profile'), getMeta('stats'), getMeta('failedMedia'),
   ]);
   posts = (await allPosts()) || [];
+  resetFilters(); // 表单恢复可能在异步加载期间覆盖，收尾再设一次
   const timeline = posts.filter((p) => p.source === 'timeline');
   const foot = posts.length - timeline.length;
   const nOriginal = timeline.filter((p) => p.category !== 'repost').length;
@@ -308,6 +313,36 @@ $('btnPrint').addEventListener('click', () => {
 });
 
 // 免选择的文件夹导出：经 chrome.downloads 直接写入下载目录的「微博手账本/」子目录
+// 逐文件下载兜底（压缩打包不可用时的旧行为）
+async function downloadFilesIndividually(all) {
+  log(`开始写入 ${all.length} 个文件到 ~/Downloads/微博手账本/ …`);
+  let done = 0;
+  let failed = 0;
+  for (const f of all) {
+    const url = URL.createObjectURL(f.blob);
+    try {
+      await new Promise((resolve) => {
+        chrome.downloads.download(
+          { url, filename: `微博手账本/${f.path}`, conflictAction: 'overwrite' },
+          (id) => {
+            if (id === undefined) { failed++; resolve(); return; }
+            const listener = (delta) => {
+              if (delta.id !== id || !delta.state) return;
+              if (delta.state.current === 'complete') { done++; chrome.downloads.onChanged.removeListener(listener); resolve(); }
+              else if (delta.state.current === 'interrupted') { failed++; chrome.downloads.onChanged.removeListener(listener); resolve(); }
+            };
+            chrome.downloads.onChanged.addListener(listener);
+          },
+        );
+      });
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+    if ((done + failed) % 200 === 0) log(`写入 ${done + failed}/${all.length}…`);
+  }
+  return { done, failed };
+}
+
 $('btnAuto').addEventListener('click', async () => {
   try {
     $('btnPick').disabled = $('btnReuse').disabled = $('btnZip').disabled = $('btnAuto').disabled = true;
@@ -321,35 +356,38 @@ $('btnAuto').addEventListener('click', async () => {
     const typeOf = (p) => (p.endsWith('.html') ? 'text/html;charset=utf-8'
       : p.endsWith('.json') ? 'application/json' : 'text/plain;charset=utf-8');
     const all = [
-      ...files.map((f) => ({ path: f.path, blob: f.data })),
-      ...statics.map((s) => ({ path: s.path, blob: new Blob([enc2.encode(s.text)], { type: typeOf(s.path) }) })),
+      ...files.map((f) => ({ name: f.path, blob: f.data })),
+      ...statics.map((s) => ({ name: s.path, blob: new Blob([enc2.encode(s.text)], { type: typeOf(s.path) }) })),
     ];
-    log(`开始写入 ${all.length} 个文件到 ~/Downloads/微博手账本/ …`);
-    let done = 0;
-    let failed = 0;
-    for (const f of all) {
-      const url = URL.createObjectURL(f.blob);
-      try {
+    const fname = `微博手账本-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.zip`;
+    try {
+      log(`打包为单个 ZIP（${all.length} 个文件，边打包边写盘不占内存）…`);
+      const { file, cleanup } = await createZipStreaming(all, (d, t) => {
+        if (d % 200 === 0) log(`打包 ${d}/${t}…`);
+      });
+      log(`压缩包 ${(file.size / 1e9).toFixed(2)} GB，开始下载…`);
+      const url = URL.createObjectURL(file);
+      const downloadId = await chrome.downloads.download({ url, filename: fname });
+      if (downloadId !== undefined) {
         await new Promise((resolve) => {
-          chrome.downloads.download(
-            { url, filename: `微博手账本/${f.path}`, conflictAction: 'overwrite' },
-            (id) => {
-              if (id === undefined) { failed++; resolve(); return; }
-              const listener = (delta) => {
-                if (delta.id !== id || !delta.state) return;
-                if (delta.state.current === 'complete') { done++; chrome.downloads.onChanged.removeListener(listener); resolve(); }
-                else if (delta.state.current === 'interrupted') { failed++; chrome.downloads.onChanged.removeListener(listener); resolve(); }
-              };
-              chrome.downloads.onChanged.addListener(listener);
-            },
-          );
+          const listener = (delta) => {
+            if (delta.id !== downloadId || !delta.state) return;
+            if (delta.state.current === 'complete' || delta.state.current === 'interrupted') {
+              chrome.downloads.onChanged.removeListener(listener);
+              resolve();
+            }
+          };
+          chrome.downloads.onChanged.addListener(listener);
         });
-      } finally {
-        URL.revokeObjectURL(url);
       }
-      if ((done + failed) % 200 === 0) log(`写入 ${done + failed}/${all.length}…`);
+      URL.revokeObjectURL(url);
+      await cleanup();
+      log('完成！ZIP 在下载文件夹，解压后打开「手账本.html」即可翻阅。', 'ok');
+    } catch (zipErr) {
+      log(`压缩包打包不可用（${zipErr.message}），改回逐文件导出…`, 'err');
+      const { done, failed } = await downloadFilesIndividually(all);
+      log(`完成：成功 ${done}，失败 ${failed}。文件夹在 ~/Downloads/微博手账本/`, 'ok');
     }
-    log(`完成：成功 ${done}，失败 ${failed}。文件夹在 ~/Downloads/微博手账本/`, 'ok');
   } catch (e) {
     log(`自动导出失败：${e.message}`, 'err');
   } finally {
