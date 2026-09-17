@@ -123,13 +123,46 @@ async function main() {
   bar.innerHTML = '<b>打印 / 另存为 PDF：</b>点右侧按钮，目标选「存储为 PDF」即可 '
     + '<button id="pj-print" style="margin-left:10px;padding:6px 18px;border:none;border-radius:7px;background:#d96f57;color:#fff;font-size:14px;cursor:pointer">🖨 打印 / 另存为 PDF</button> '
     + '<button id="pj-hide" style="margin-left:8px;padding:6px 12px;border:1px solid #d8cfc0;border-radius:7px;background:#fff;cursor:pointer">隐藏</button>';
+  // 打印前强制装载图片：打印帧不会滚动，懒加载的图不进 PDF，必须提前 eager 批量装载
+  async function ensureImgsForPrint() {
+    const imgs = Array.from(document.querySelectorAll('img'));
+    const B = 250;
+    let ready = 0;
+    for (let i = 0; i < imgs.length; i += B) {
+      const slice = imgs.slice(i, i + B);
+      slice.forEach((im) => { im.loading = 'eager'; });
+      await Promise.all(slice.map((im) => {
+        if (im.complete && im.naturalWidth > 0) { ready++; return Promise.resolve(); }
+        return new Promise((res) => {
+          im.addEventListener('load', () => { ready++; res(); }, { once: true });
+          im.addEventListener('error', () => { ready++; res(); }, { once: true });
+          setTimeout(res, 20000);
+        });
+      }));
+      if ($('pj-status')) $('pj-status').textContent = `图片装载 ${ready}/${imgs.length}…`;
+    }
+  }
+
   document.body.appendChild(bar);
   document.body.style.paddingTop = '54px';
-  document.getElementById('pj-print').onclick = () => window.print();
+  const st = document.createElement('span');
+  st.id = 'pj-status';
+  st.style.cssText = 'margin-left:10px;color:#9a917f;font-size:12px';
+  bar.appendChild(st);
+  document.getElementById('pj-print').onclick = async () => {
+    const btn = document.getElementById('pj-print');
+    btn.disabled = true;
+    await ensureImgsForPrint();
+    btn.disabled = false;
+    window.print();
+  };
   document.getElementById('pj-hide').onclick = () => { bar.remove(); document.body.style.paddingTop = '0'; };
 
-  // 等图片开个头后自动呼出打印（被拦截时点按钮即可）
-  setTimeout(() => { try { window.print(); } catch (e) { /* 用户手动点按钮 */ } }, 1200);
+  // 图片装载完成后自动呼出打印（被拦截或太久时手动点按钮即可）
+  (async () => {
+    try { await ensureImgsForPrint(); } catch (e) { /* 尽量装载 */ }
+    try { window.print(); } catch (e) { /* 用户手动点按钮 */ }
+  })();
 }
 
 main().catch((e) => {
