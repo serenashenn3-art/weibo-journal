@@ -17,7 +17,7 @@ A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into 
 - **Complete content**: long posts are completed via the longtext API — including the original text of reposted Weibo; images are always downloaded at `large` original quality (3741/3741 successful in our 1797-post real run, 0 failures); 头条文章 are fetched at original text when Weibo's visibility window allows (older articles degrade to title + link).
 - **Check-to-build**: pick 原创 / 转发 / 仅含图片 / 仅含视频 / 仅纯文字 before generating; the generated journal keeps interactive filters (category chips, year buttons, full-text search, month TOC) — filter first, then print.
 - **Timeline browsing**: vertical timeline with date rail, washi-tape month stickers, polaroid-style image grids, lazy loading, click-to-zoom lightbox.
-- **Print & PDF**: built-in 🖨 print button with print-optimized layout (print header, page-break-safe cards); the export page opens a print tab that auto-invokes the print dialog — choose "Save as PDF" for a vector-text, searchable PDF.
+- **Print & PDF**: built-in 🖨 print button with print-optimized layout (print header, page-break-safe cards); the export page opens a print tab that force-loads every image (print frames don't scroll, so lazy-loaded images would otherwise be missing from the PDF) and then auto-invokes the print dialog — choose "Save as PDF" for a vector-text, searchable PDF.
 - **Four export paths**: File System Access folder picker, one-click auto-export as a **single ZIP** to the downloads folder (streaming build — constant memory, no thousands of individual downloads), in-memory ZIP fallback, print-to-PDF.
 - **Resilient crawling**: 1.2s/request rate limit, exponential backoff on 418/403/432, checkpoint resume across browser restarts, auto-switch to the mobile API when the desktop one rejects (logged-out), failed media retried on the next run and listed in the report.
 - **Completeness loop**: when crawling wraps up it reconciles automatically — every local media record is verified (including corrupted empty-blob records; resume checks them too) and missing items are re-downloaded on the spot with rate limiting; export/print sweeps again, repairing corrupted records; the export report prints four numbers — expected vs stored vs backfilled vs still-missing — so completeness is provable, not promised.
@@ -31,7 +31,7 @@ A Chrome extension (Manifest V3) that exports **all your own Weibo posts** into 
 - **内容完整**：超长微博经长文接口补全全文（含转发原博全文）；图片一律 `large` 原图（实测 1797 条全量导出 3741/3741 张成功、0 失败）；头条文章在微博可见期允许时抓取正文（超过半年可见期的文章保留标题+链接）。
 - **勾选后生成**：导出前勾选 原创 / 转发 / 仅含图片 / 仅含视频 / 仅纯文字；生成后的手账本仍保留交互筛选（分类胶囊、年份按钮、全文搜索、月份目录）——先筛选再打印，PDF 只含筛选结果。
 - **时间线翻阅**：纵向时间线 + 日期轨道、和纸胶带月份贴纸、拍立得图片墙、懒加载、点击放大。
-- **打印与 PDF**：内置 🖨 打印按钮，打印版式已适配（页眉、卡片防跨页截断）；导出页可打开打印页并自动呼出打印对话框，目标选「存储为 PDF」即得矢量文字版 PDF。
+- **打印与 PDF**：内置 🖨 打印按钮，打印版式已适配（页眉、卡片防跨页截断）；导出页打开打印页后会**强制装载全部图片再呼出打印**（打印帧不会滚动，懒加载的图片否则进不了 PDF——早期照片缺失即由此引起），目标选「存储为 PDF」即得矢量文字版 PDF。
 - **四条导出路径**：File System Access 选择文件夹 / 一键自动导出 **ZIP 单文件**到下载文件夹（流式打包不占内存，不再是一张一张下载）/ 内存 ZIP 回退 / 打印转 PDF。
 - **韧性抓取**：1.2 秒/请求限速，418/403/432 指数退避，关浏览器断点续抓，未登录访问被拒时自动切移动端接口，失败媒体下次抓取自动重试并记入报告。
 - **完整性闭环**：抓取收尾时自动对账——逐条核对本地媒体库（含空文件损坏记录，断点续抓同样校验），缺失的当场限速补齐；导出/打印时再兜一遍，损坏记录自动识别重新下载并回写修复；导出报告输出「应有 vs 实存 vs 回补 vs 仍缺」四项数字，完整可证。
