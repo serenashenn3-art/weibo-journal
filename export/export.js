@@ -49,6 +49,10 @@ async function loadData() {
     (failedMedia && failedMedia.length ? ` · 已记录失败 <b>${failedMedia.length}</b> 个` : '');
   const hasDir = !!(await getMeta('dirHandle'));
   $('btnReuse').classList.toggle('hidden', !hasDir);
+  if (!window.showDirectoryPicker) { // Safari 无 File System Access，隐藏文件夹导出路径
+    $('btnPick').classList.add('hidden');
+    $('btnReuse').classList.add('hidden');
+  }
   if (!posts.length) {
     log('还没有抓到任何微博。请先在插件弹窗里点击「开始导出」。', 'err');
     ['btnPick', 'btnReuse', 'btnZip'].forEach((id) => { $(id).disabled = true; });
@@ -312,32 +316,46 @@ $('btnPrint').addEventListener('click', () => {
   }
 });
 
-// 免选择的文件夹导出：经 chrome.downloads 直接写入下载目录的「微博手账本/」子目录
-// 逐文件下载兜底（压缩打包不可用时的旧行为）
+// Safari 等不支持 chrome.downloads 的环境回退为 <a download> 原生下载
+// 返回 Promise<boolean>：true=已交给浏览器；chrome 下可精确等待完成，Safari 下尽力而为
+function downloadBlob(blob, filename) {
+  return new Promise((resolve) => {
+    const hasDownloads = typeof chrome !== 'undefined' && chrome.downloads && typeof chrome.downloads.download === 'function';
+    if (hasDownloads) {
+      chrome.downloads.download({ url: URL.createObjectURL(blob), filename, conflictAction: 'overwrite' }, (id) => {
+        if (id === undefined) { resolve(false); return; }
+        const listener = (delta) => {
+          if (delta.id !== id || !delta.state) return;
+          if (delta.state.current === 'complete' || delta.state.current === 'interrupted') {
+            chrome.downloads.onChanged.removeListener(listener);
+            resolve(delta.state.current === 'complete');
+          }
+        };
+        chrome.downloads.onChanged.addListener(listener);
+      });
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    setTimeout(() => resolve(true), 800); // Safari 无下载完成事件，稍后即视为已交付
+  });
+}
+
+// 免选择的文件夹导出：逐文件下载兜底（压缩打包不可用时的旧行为）
 async function downloadFilesIndividually(all) {
   log(`开始写入 ${all.length} 个文件到 ~/Downloads/微博手账本/ …`);
   let done = 0;
   let failed = 0;
+  const safari = !(typeof chrome !== 'undefined' && chrome.downloads && chrome.downloads.download);
   for (const f of all) {
-    const url = URL.createObjectURL(f.blob);
-    try {
-      await new Promise((resolve) => {
-        chrome.downloads.download(
-          { url, filename: `微博手账本/${f.path}`, conflictAction: 'overwrite' },
-          (id) => {
-            if (id === undefined) { failed++; resolve(); return; }
-            const listener = (delta) => {
-              if (delta.id !== id || !delta.state) return;
-              if (delta.state.current === 'complete') { done++; chrome.downloads.onChanged.removeListener(listener); resolve(); }
-              else if (delta.state.current === 'interrupted') { failed++; chrome.downloads.onChanged.removeListener(listener); resolve(); }
-            };
-            chrome.downloads.onChanged.addListener(listener);
-          },
-        );
-      });
-    } finally {
-      URL.revokeObjectURL(url);
-    }
+    const ok = await downloadBlob(f.blob, `微博手账本/${f.path}`);
+    if (ok === false) failed++; else done++;
+    if (safari) await new Promise((r) => setTimeout(r, 150)); // Safari 连点下载需要间隔
     if ((done + failed) % 200 === 0) log(`写入 ${done + failed}/${all.length}…`);
   }
   return { done, failed };
@@ -366,21 +384,7 @@ $('btnAuto').addEventListener('click', async () => {
         if (d % 200 === 0) log(`打包 ${d}/${t}…`);
       });
       log(`压缩包 ${(file.size / 1e9).toFixed(2)} GB，开始下载…`);
-      const url = URL.createObjectURL(file);
-      const downloadId = await chrome.downloads.download({ url, filename: fname });
-      if (downloadId !== undefined) {
-        await new Promise((resolve) => {
-          const listener = (delta) => {
-            if (delta.id !== downloadId || !delta.state) return;
-            if (delta.state.current === 'complete' || delta.state.current === 'interrupted') {
-              chrome.downloads.onChanged.removeListener(listener);
-              resolve();
-            }
-          };
-          chrome.downloads.onChanged.addListener(listener);
-        });
-      }
-      URL.revokeObjectURL(url);
+      await downloadBlob(file, fname);
       await cleanup();
       log('完成！ZIP 在下载文件夹，解压后打开「手账本.html」即可翻阅。', 'ok');
     } catch (zipErr) {
